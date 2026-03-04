@@ -1,19 +1,12 @@
 require('dotenv').config();
-const { createRedditClient, startStreams } = require('./reddit');
+const { startPolling } = require('./reddit');
 const { analyzePost } = require('./analyzer');
 const { sendAlert } = require('./telegram');
 
-const seenPostIds = new Set();
-
 async function handlePost(post) {
-  // skip if already seen
-  if (seenPostIds.has(post.id)) return;
-  seenPostIds.add(post.id);
-
   console.log(`[Monitor] New post on ${post.subreddit}: "${post.title}"`);
 
   const analysis = await analyzePost(post);
-
   console.log(`[Monitor] Score: ${analysis.score}/10 — ${analysis.reason}`);
 
   if (analysis.worthCommenting) {
@@ -25,11 +18,6 @@ function main() {
   console.log('🛫 Aviation Reddit Monitor starting...\n');
 
   const missingKeys = [
-    'REDDIT_CLIENT_ID',
-    'REDDIT_CLIENT_SECRET',
-    'REDDIT_USERNAME',
-    'REDDIT_PASSWORD',
-    'REDDIT_USER_AGENT',
     'ANTHROPIC_API_KEY',
     'TELEGRAM_BOT_TOKEN',
     'TELEGRAM_CHAT_ID',
@@ -41,10 +29,7 @@ function main() {
     process.exit(1);
   }
 
-  const redditClient = createRedditClient();
-  startStreams(redditClient, handlePost);
-
-  console.log('✅ Monitoring active. Waiting for new posts...\n');
+  startPolling(handlePost);
 }
 
 main();

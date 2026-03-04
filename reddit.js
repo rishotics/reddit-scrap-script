@@ -1,44 +1,70 @@
-require('dotenv').config();
-const Snoowrap = require('snoowrap');
-const { SubmissionStream } = require('snoostorm');
 const config = require('./config');
 
-function createRedditClient() {
-  return new Snoowrap({
-    userAgent: process.env.REDDIT_USER_AGENT,
-    clientId: process.env.REDDIT_CLIENT_ID,
-    clientSecret: process.env.REDDIT_CLIENT_SECRET,
-    username: process.env.REDDIT_USERNAME,
-    password: process.env.REDDIT_PASSWORD,
+const USER_AGENT = 'AvGeekMonitor/1.0 (by aviation content creator)';
+
+async function fetchNewPosts(subreddit) {
+  const url = `https://www.reddit.com/r/${subreddit}/new.json?limit=10`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': USER_AGENT },
   });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status} for r/${subreddit}`);
+
+  const data = await res.json();
+  return data.data.children.map((child) => ({
+    id: child.data.id,
+    title: child.data.title,
+    body: child.data.selftext || '',
+    url: child.data.url,
+    permalink: `https://reddit.com${child.data.permalink}`,
+    subreddit: child.data.subreddit_name_prefixed,
+    author: child.data.author,
+    createdAt: child.data.created_utc,
+  }));
 }
 
-function startStreams(client, onPost) {
-  for (const subreddit of config.subreddits) {
-    const stream = new SubmissionStream(client, {
-      subreddit,
-      limit: 10,
-      pollTime: config.pollInterval,
-    });
+function startPolling(onPost) {
+  const seenIds = new Set();
 
-    stream.on('item', (post) => {
-      onPost({
-        id: post.id,
-        title: post.title,
-        body: post.selftext || '',
-        url: post.url,
-        permalink: `https://reddit.com${post.permalink}`,
-        subreddit: post.subreddit_name_prefixed,
-        author: post.author.name,
-      });
-    });
+  async function poll() {
+    for (const subreddit of config.subreddits) {
+      try {
+        const posts = await fetchNewPosts(subreddit);
+        for (const post of posts) {
+          if (!seenIds.has(post.id)) {
+            seenIds.add(post.id);
+            // skip posts older than 10 minutes on startup to avoid spam
+            const ageSeconds = Date.now() / 1000 - post.createdAt;
+            if (ageSeconds < 600) onPost(post);
+          }
+        }
+      } catch (err) {
+        console.error(`[Reddit] Error polling r/${subreddit}:`, err.message);
+      }
 
-    stream.on('error', (err) => {
-      console.error(`[Reddit] Stream error on r/${subreddit}:`, err.message);
-    });
-
-    console.log(`[Reddit] Monitoring r/${subreddit}`);
+      // small delay between subreddits to avoid rate limiting
+      await new Promise((r) => setTimeout(r, 1000));
+    }
   }
+
+  // initial poll to seed seenIds without triggering alerts
+  async function seed() {
+    console.log('[Reddit] Seeding seen post IDs...');
+    for (const subreddit of config.subreddits) {
+      try {
+        const posts = await fetchNewPosts(subreddit);
+        posts.forEach((p) => seenIds.add(p.id));
+        console.log(`[Reddit] Monitoring r/${subreddit}`);
+      } catch (err) {
+        console.error(`[Reddit] Seed error on r/${subreddit}:`, err.message);
+      }
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    console.log('[Reddit] Seeding complete. Now watching for new posts...\n');
+    setInterval(poll, config.pollInterval);
+  }
+
+  seed();
 }
 
-module.exports = { createRedditClient, startStreams };
+module.exports = { startPolling };
