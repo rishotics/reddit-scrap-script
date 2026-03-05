@@ -19,21 +19,35 @@ function parseAtom(xml) {
       return m ? m[1].trim() : '';
     };
 
-    const link = entry.match(/<link[^>]+rel="alternate"[^>]+href="([^"]+)"/)?.[1] || '';
-    const id = link.split('/comments/')[1]?.split('/')[0] || Math.random().toString(36).slice(2);
-    const subredditMatch = link.match(/reddit\.com\/r\/([^/]+)/);
-    const author = entry.match(/<author>[\s\S]*?<name>([^<]+)<\/name>/)?.[1] || 'unknown';
+    // <link href="URL"/> — self-closing, no rel attribute
+    const link = entry.match(/<link href="([^"]+)"/)?.[1] || '';
+
+    // <id>t3_POSTID</id>
+    const rawId = getText('id');
+    const id = rawId.replace('t3_', '') || Math.random().toString(36).slice(2);
+
+    // <category label="r/aviation"/>
+    const subreddit = entry.match(/<category[^>]+label="([^"]+)"/)?.[1] || 'r/unknown';
+
+    // <author><name>/u/username</name></author> — strip /u/ prefix
+    const rawAuthor = entry.match(/<author>[\s\S]*?<name>([^<]+)<\/name>/)?.[1] || 'unknown';
+    const author = rawAuthor.replace(/^\/u\//, '');
+
     const updated = getText('updated');
     const title = getText('title');
-    const content = getText('content').replace(/<[^>]+>/g, '').slice(0, 500);
+
+    // content is HTML-encoded — decode entities then strip tags
+    const rawContent = getText('content')
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#32;/g, ' ')
+      .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500);
 
     items.push({
       id,
       title,
-      body: content,
+      body: rawContent,
       url: link,
       permalink: link,
-      subreddit: subredditMatch ? `r/${subredditMatch[1]}` : 'r/unknown',
+      subreddit,
       author,
       createdAt: updated ? new Date(updated).getTime() / 1000 : Date.now() / 1000,
     });
