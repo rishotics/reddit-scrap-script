@@ -3,13 +3,36 @@ const { startPolling } = require('./reddit');
 const { analyzePost } = require('./analyzer');
 const { sendAlert } = require('./telegram');
 
+const MAX_ALERTS_PER_HOUR = 10;
+
+const sentPostIds = new Set();
+let alertsThisHour = 0;
+
+// reset counter every hour
+setInterval(() => {
+  console.log(`[Monitor] Hourly reset — sent ${alertsThisHour} alerts this hour.`);
+  alertsThisHour = 0;
+}, 60 * 60 * 1000);
+
 async function handlePost(post) {
+  // skip if already alerted for this post
+  if (sentPostIds.has(post.id)) return;
+
+  // skip if hourly limit reached
+  if (alertsThisHour >= MAX_ALERTS_PER_HOUR) {
+    console.log(`[Monitor] Hourly limit reached (${MAX_ALERTS_PER_HOUR}). Skipping: "${post.title}"`);
+    return;
+  }
+
   console.log(`[Monitor] New post on ${post.subreddit}: "${post.title}"`);
 
   const analysis = await analyzePost(post);
   console.log(`[Monitor] Score: ${analysis.score}/10 — ${analysis.reason}`);
 
   if (analysis.worthCommenting) {
+    sentPostIds.add(post.id);
+    alertsThisHour++;
+    console.log(`[Monitor] Alert ${alertsThisHour}/${MAX_ALERTS_PER_HOUR} this hour.`);
     await sendAlert(post, analysis);
   }
 }
