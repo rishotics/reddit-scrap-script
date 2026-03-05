@@ -1,12 +1,14 @@
 const config = require('./config');
 
-const USER_AGENT = 'AvGeekMonitor/1.0 (by aviation content creator)';
+const HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'application/json, text/plain, */*',
+  'Accept-Language': 'en-US,en;q=0.9',
+};
 
 async function fetchNewPosts(subreddit) {
-  const url = `https://www.reddit.com/r/${subreddit}/new.json?limit=10`;
-  const res = await fetch(url, {
-    headers: { 'User-Agent': USER_AGENT },
-  });
+  const url = `https://www.reddit.com/r/${subreddit}/new.json?limit=10&raw_json=1`;
+  const res = await fetch(url, { headers: HEADERS });
 
   if (!res.ok) throw new Error(`HTTP ${res.status} for r/${subreddit}`);
 
