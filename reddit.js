@@ -83,7 +83,7 @@ function startPolling(onPost) {
       } catch (err) {
         console.error(`[Reddit] Error polling r/${subreddit}:`, err.message);
       }
-      await new Promise((r) => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 3000));
     }
   }
 
@@ -97,7 +97,7 @@ function startPolling(onPost) {
       } catch (err) {
         console.error(`[Reddit] Seed error on r/${subreddit}:`, err.message);
       }
-      await new Promise((r) => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 3000));
     }
     console.log('[Reddit] Seeding complete. Now watching for new posts...\n');
     setInterval(poll, config.pollInterval);

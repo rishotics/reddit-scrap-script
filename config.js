@@ -8,7 +8,7 @@ const config = {
     'TwoXIndia',
     'IndianBoysOnTinder',
   ],
-  pollInterval: 30000, // 30 seconds
+  pollInterval: 120000, // 2 minutes
   minScore: 7,         // minimum Claude score to trigger alert
   claudeModel: 'claude-haiku-4-5-20251001',
 };
