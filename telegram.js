@@ -6,7 +6,7 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 async function sendAlert(post, analysis) {
   const message = `
-✈️ *New Aviation Post — Worth Commenting!*
+💍 *New Matrimonial Post — Worth Engaging!*
 
 📌 *Subreddit:* ${post.subreddit}
 📝 *Title:* ${post.title}

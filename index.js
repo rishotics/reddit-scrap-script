@@ -38,7 +38,7 @@ async function handlePost(post) {
 }
 
 function main() {
-  console.log('🛫 Aviation Reddit Monitor starting...\n');
+  console.log('💍 Matrimonial Reddit Monitor starting...\n');
 
   const missingKeys = [
     'ANTHROPIC_API_KEY',

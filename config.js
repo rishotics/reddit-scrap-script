@@ -1,12 +1,12 @@
 const config = {
   subreddits: [
-    'aviation',
-    'planespotting',
-    'flightsim',
-    'MicrosoftFlightSim',
-    'flying',
-    'boeing',
-    'airbus',
+    'IndianMatchmaking',
+    'Arrangedmarriage',
+    'desiweddings',
+    'ABCDesis',
+    'RelationshipIndia',
+    'TwoXIndia',
+    'IndianBoysOnTinder',
   ],
   pollInterval: 30000, // 30 seconds
   minScore: 7,         // minimum Claude score to trigger alert
