@@ -1,13 +1,47 @@
 const config = require('./config');
 
-const HEADERS = {
-  'User-Agent': 'MatriMonitor/1.0 (by rishotics)',
-  'Accept': 'application/json',
-};
+let accessToken = null;
+let tokenExpiry = 0;
+
+async function getAccessToken() {
+  if (accessToken && Date.now() < tokenExpiry) return accessToken;
+
+  const clientId = process.env.REDDIT_CLIENT_ID;
+  const clientSecret = process.env.REDDIT_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error('REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET are required in .env');
+  }
+
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+  const res = await fetch('https://www.reddit.com/api/v1/access_token', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'MatriMonitor/1.0 (by rishotics)',
+    },
+    body: 'grant_type=client_credentials',
+  });
+
+  if (!res.ok) throw new Error(`OAuth failed: HTTP ${res.status}`);
+
+  const data = await res.json();
+  accessToken = data.access_token;
+  tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+  console.log('[Reddit] OAuth token acquired');
+  return accessToken;
+}
 
 async function fetchNewPosts(subreddit) {
-  const url = `https://www.reddit.com/r/${subreddit}/new.json?limit=10&raw_json=1`;
-  const res = await fetch(url, { headers: HEADERS });
+  const token = await getAccessToken();
+  const url = `https://oauth.reddit.com/r/${subreddit}/new?limit=10&raw_json=1`;
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'User-Agent': 'MatriMonitor/1.0 (by rishotics)',
+    },
+  });
 
   if (!res.ok) throw new Error(`HTTP ${res.status} for r/${subreddit}`);
 

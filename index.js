@@ -44,6 +44,8 @@ function main() {
     'ANTHROPIC_API_KEY',
     'TELEGRAM_BOT_TOKEN',
     'TELEGRAM_CHAT_ID',
+    'REDDIT_CLIENT_ID',
+    'REDDIT_CLIENT_SECRET',
   ].filter((key) => !process.env[key]);
 
   if (missingKeys.length > 0) {
