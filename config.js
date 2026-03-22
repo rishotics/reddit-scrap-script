@@ -1,12 +1,9 @@
 const config = {
   subreddits: [
-    'IndianMatchmaking',
     'Arrangedmarriage',
+    'IndianMatchmaking',
     'desiweddings',
     'ABCDesis',
-    'RelationshipIndia',
-    'TwoXIndia',
-    'IndianBoysOnTinder',
   ],
   pollInterval: 180000, // 3 minutes
   minScore: 7,         // minimum Claude score to trigger alert
